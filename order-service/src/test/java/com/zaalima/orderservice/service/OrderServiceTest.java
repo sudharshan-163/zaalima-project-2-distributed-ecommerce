@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -18,6 +19,9 @@ class OrderServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private KafkaTemplate<String, Order> kafkaTemplate;
 
     @InjectMocks
     private OrderService orderService;
@@ -52,6 +56,7 @@ class OrderServiceTest {
 
         assertTrue(result.isPresent());
         assertSame(order, result.get());
+
         verify(orderRepository).findById(1L);
     }
 
@@ -63,6 +68,7 @@ class OrderServiceTest {
         var result = orderService.getOrderById(99L);
 
         assertTrue(result.isEmpty());
+
         verify(orderRepository).findById(99L);
     }
 
@@ -76,7 +82,9 @@ class OrderServiceTest {
         var result = orderService.createOrder(order);
 
         assertSame(order, result);
+
         verify(orderRepository).save(order);
+        verify(kafkaTemplate).send("order-events", order);
     }
 
     @Test
@@ -88,6 +96,7 @@ class OrderServiceTest {
 
         when(orderRepository.findById(1L))
                 .thenReturn(Optional.of(existingOrder));
+
         when(orderRepository.save(existingOrder))
                 .thenReturn(existingOrder);
 
@@ -98,6 +107,7 @@ class OrderServiceTest {
 
         verify(orderRepository).findById(1L);
         verify(orderRepository).save(existingOrder);
+        verify(kafkaTemplate).send("order-events", existingOrder);
     }
 
     @Test
@@ -114,6 +124,7 @@ class OrderServiceTest {
 
         verify(orderRepository).findById(99L);
         verify(orderRepository, never()).save(any(Order.class));
+        verify(kafkaTemplate, never()).send(anyString(), any(Order.class));
     }
 
     @Test
@@ -124,6 +135,7 @@ class OrderServiceTest {
         boolean result = orderService.deleteOrder(1L);
 
         assertTrue(result);
+
         verify(orderRepository).existsById(1L);
         verify(orderRepository).deleteById(1L);
     }
@@ -136,6 +148,7 @@ class OrderServiceTest {
         boolean result = orderService.deleteOrder(99L);
 
         assertFalse(result);
+
         verify(orderRepository).existsById(99L);
         verify(orderRepository, never()).deleteById(99L);
     }
