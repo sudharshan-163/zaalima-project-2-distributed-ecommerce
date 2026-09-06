@@ -1,6 +1,7 @@
 package com.zaalima.inventoryservice.service;
 
 import com.zaalima.inventoryservice.entity.Inventory;
+import com.zaalima.inventoryservice.event.OrderEvent;
 import com.zaalima.inventoryservice.repository.InventoryRepository;
 import org.springframework.stereotype.Service;
 
@@ -43,5 +44,36 @@ public class InventoryService {
 
         inventoryRepository.deleteById(id);
         return true;
+    }
+
+    public void processOrder(OrderEvent orderEvent) {
+
+        inventoryRepository.findByProductId(orderEvent.getProductId())
+                .ifPresent(inventory -> {
+
+                    int currentQuantity = inventory.getQuantity();
+                    int orderedQuantity = orderEvent.getQuantity();
+
+                    if (currentQuantity >= orderedQuantity) {
+
+                        inventory.setQuantity(currentQuantity - orderedQuantity);
+
+                        inventoryRepository.save(inventory);
+
+                        System.out.println(
+                                "Inventory updated for product "
+                                        + orderEvent.getProductId()
+                                        + ". Remaining quantity: "
+                                        + inventory.getQuantity()
+                        );
+
+                    } else {
+
+                        System.out.println(
+                                "Insufficient inventory for product "
+                                        + orderEvent.getProductId()
+                        );
+                    }
+                });
     }
 }
