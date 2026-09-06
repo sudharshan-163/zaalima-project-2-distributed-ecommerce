@@ -1,6 +1,7 @@
 package com.zaalima.paymentservice.event;
 
 import com.zaalima.paymentservice.entity.Payment;
+import com.zaalima.paymentservice.event.StockReservedEvent;
 import com.zaalima.paymentservice.repository.PaymentRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,26 +21,26 @@ public class OrderEventListener {
     }
 
     @KafkaListener(
-            topics = "order-events",
+            topics = "inventory-events",
             groupId = "payment-service-group"
     )
-    public void handleOrderEvent(OrderEvent event) {
+    public void handleOrderEvent(StockReservedEvent event) {
 
         System.out.println(
-                "Received order event: orderId=" + event.getId()
+                "Received order event: orderId=" + event.getOrderId()
                         + ", productId=" + event.getProductId()
                         + ", quantity=" + event.getQuantity()
                         + ", status=" + event.getStatus()
         );
 
-        if (event.getId() == null || event.getStatus() == null) {
+        if (event.getOrderId() == null || event.getStatus() == null) {
             return;
         }
 
-        if ("CREATED".equals(event.getStatus())) {
+        if ("RESERVED".equals(event.getStatus())) {
 
             Payment payment = new Payment(
-                    event.getId(),
+                    event.getOrderId(),
                     0.0,
                     "SUCCESS"
             );
@@ -48,12 +49,12 @@ public class OrderEventListener {
 
             kafkaTemplate.send(
                     "payment-events",
-                    new PaymentResultEvent(event.getId(), "SUCCESS")
+                    new PaymentResultEvent(event.getOrderId(), "SUCCESS")
             );
 
             System.out.println(
                     "Payment created successfully for orderId="
-                            + event.getId()
+                            + event.getOrderId()
             );
         }
     }

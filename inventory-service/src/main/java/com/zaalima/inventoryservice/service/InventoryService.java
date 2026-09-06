@@ -2,7 +2,9 @@ package com.zaalima.inventoryservice.service;
 
 import com.zaalima.inventoryservice.entity.Inventory;
 import com.zaalima.inventoryservice.event.OrderEvent;
+import com.zaalima.inventoryservice.event.StockReservedEvent;
 import com.zaalima.inventoryservice.repository.InventoryRepository;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,9 +14,13 @@ import java.util.Optional;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
+    private final KafkaTemplate<String, StockReservedEvent> kafkaTemplate;
 
-    public InventoryService(InventoryRepository inventoryRepository) {
+    public InventoryService(
+            InventoryRepository inventoryRepository,
+            KafkaTemplate<String, StockReservedEvent> kafkaTemplate) {
         this.inventoryRepository = inventoryRepository;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     public List<Inventory> getAllInventory() {
@@ -60,9 +66,23 @@ public class InventoryService {
 
                         inventoryRepository.save(inventory);
 
+                        StockReservedEvent stockReservedEvent =
+                                new StockReservedEvent(
+                                        orderEvent.getId(),
+                                        orderEvent.getProductId(),
+                                        orderEvent.getQuantity(),
+                                        "RESERVED"
+                                );
+
+                        kafkaTemplate.send(
+                                "inventory-events",
+                                String.valueOf(orderEvent.getId()),
+                                stockReservedEvent
+                        );
+
                         System.out.println(
-                                "Inventory updated for product "
-                                        + orderEvent.getProductId()
+                                "Inventory reserved for order "
+                                        + orderEvent.getId()
                                         + ". Remaining quantity: "
                                         + inventory.getQuantity()
                         );
