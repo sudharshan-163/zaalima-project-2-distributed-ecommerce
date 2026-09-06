@@ -87,6 +87,21 @@ class PaymentControllerTest {
     }
 
     @Test
+    void failPayment_shouldTriggerPaymentFailure() throws Exception {
+
+        mockMvc.perform(post("/payments/fail")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "orderId": 10,
+                                    "productId": 101,
+                                    "quantity": 2
+                                }
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void updatePayment_shouldReturnUpdatedPayment() throws Exception {
         Payment payment = new Payment(101L, 750.0, "SUCCESS");
 

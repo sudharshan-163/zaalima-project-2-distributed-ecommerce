@@ -1,7 +1,10 @@
 package com.zaalima.paymentservice.service;
 
+import com.zaalima.paymentservice.dto.PaymentFailureRequest;
 import com.zaalima.paymentservice.entity.Payment;
+import com.zaalima.paymentservice.event.PaymentResultEvent;
 import com.zaalima.paymentservice.repository.PaymentRepository;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,9 +14,13 @@ import java.util.Optional;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final KafkaTemplate<String, PaymentResultEvent> kafkaTemplate;
 
-    public PaymentService(PaymentRepository paymentRepository) {
+    public PaymentService(
+            PaymentRepository paymentRepository,
+            KafkaTemplate<String, PaymentResultEvent> kafkaTemplate) {
         this.paymentRepository = paymentRepository;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     public List<Payment> getAllPayments() {
@@ -44,5 +51,37 @@ public class PaymentService {
 
         paymentRepository.deleteById(id);
         return true;
+    }
+
+    public void publishPaymentFailure(PaymentFailureRequest request) {
+
+        if (request.getOrderId() == null
+                || request.getProductId() == null
+                || request.getQuantity() == null) {
+            return;
+        }
+
+        Payment payment =
+                new Payment(
+                        request.getOrderId(),
+                        0.0,
+                        "FAILED"
+                );
+
+        paymentRepository.save(payment);
+
+        PaymentResultEvent event =
+                new PaymentResultEvent(
+                        request.getOrderId(),
+                        request.getProductId(),
+                        request.getQuantity(),
+                        "FAILED"
+                );
+
+        kafkaTemplate.send(
+                "payment-events",
+                String.valueOf(request.getOrderId()),
+                event
+        );
     }
 }

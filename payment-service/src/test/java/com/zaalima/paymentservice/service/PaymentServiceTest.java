@@ -1,12 +1,15 @@
 package com.zaalima.paymentservice.service;
 
+import com.zaalima.paymentservice.dto.PaymentFailureRequest;
 import com.zaalima.paymentservice.entity.Payment;
+import com.zaalima.paymentservice.event.PaymentResultEvent;
 import com.zaalima.paymentservice.repository.PaymentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +22,9 @@ class PaymentServiceTest {
 
     @Mock
     private PaymentRepository paymentRepository;
+
+    @Mock
+    private KafkaTemplate<String, PaymentResultEvent> kafkaTemplate;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -113,5 +119,34 @@ class PaymentServiceTest {
 
         assertFalse(result);
         verify(paymentRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void publishPaymentFailure_shouldSaveFailedPaymentAndPublishEvent() {
+
+        PaymentFailureRequest request = new PaymentFailureRequest();
+        request.setOrderId(10L);
+        request.setProductId(101L);
+        request.setQuantity(2);
+
+        Payment savedPayment = new Payment(10L, 0.0, "FAILED");
+
+        when(paymentRepository.save(any(Payment.class)))
+                .thenReturn(savedPayment);
+
+        paymentService.publishPaymentFailure(request);
+
+        verify(paymentRepository).save(any(Payment.class));
+
+        verify(kafkaTemplate).send(
+                eq("payment-events"),
+                eq("10"),
+                argThat(event ->
+                        event.getOrderId().equals(10L)
+                                && event.getProductId().equals(101L)
+                                && event.getQuantity().equals(2)
+                                && "FAILED".equals(event.getStatus())
+                )
+        );
     }
 }

@@ -1,7 +1,6 @@
 package com.zaalima.paymentservice.event;
 
 import com.zaalima.paymentservice.entity.Payment;
-import com.zaalima.paymentservice.event.StockReservedEvent;
 import com.zaalima.paymentservice.repository.PaymentRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -33,11 +32,14 @@ public class OrderEventListener {
                         + ", status=" + event.getStatus()
         );
 
-        if (event.getOrderId() == null || event.getStatus() == null) {
+        if (event.getOrderId() == null
+                || event.getProductId() == null
+                || event.getQuantity() == null
+                || event.getStatus() == null) {
             return;
         }
 
-        if ("RESERVED".equals(event.getStatus())) {
+        if ("RESERVED".equalsIgnoreCase(event.getStatus())) {
 
             Payment payment = new Payment(
                     event.getOrderId(),
@@ -49,7 +51,12 @@ public class OrderEventListener {
 
             kafkaTemplate.send(
                     "payment-events",
-                    new PaymentResultEvent(event.getOrderId(), "SUCCESS")
+                    new PaymentResultEvent(
+                            event.getOrderId(),
+                            event.getProductId(),
+                            event.getQuantity(),
+                            "SUCCESS"
+                    )
             );
 
             System.out.println(

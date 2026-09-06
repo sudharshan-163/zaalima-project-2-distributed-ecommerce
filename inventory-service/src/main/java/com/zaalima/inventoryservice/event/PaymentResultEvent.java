@@ -1,4 +1,4 @@
-package com.zaalima.paymentservice.event;
+package com.zaalima.inventoryservice.event;
 
 public class PaymentResultEvent {
 
@@ -10,11 +10,7 @@ public class PaymentResultEvent {
     public PaymentResultEvent() {
     }
 
-    public PaymentResultEvent(
-            Long orderId,
-            Long productId,
-            Integer quantity,
-            String status) {
+    public PaymentResultEvent(Long orderId, Long productId, Integer quantity, String status) {
         this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;

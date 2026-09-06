@@ -1,12 +1,14 @@
 package com.zaalima.inventoryservice.service;
 
 import com.zaalima.inventoryservice.entity.Inventory;
+import com.zaalima.inventoryservice.event.StockReleasedEvent;
 import com.zaalima.inventoryservice.repository.InventoryRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +21,9 @@ class InventoryServiceTest {
 
     @Mock
     private InventoryRepository inventoryRepository;
+
+    @Mock
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @InjectMocks
     private InventoryService inventoryService;
@@ -100,5 +105,24 @@ class InventoryServiceTest {
 
         verify(inventoryRepository).existsById(1L);
         verify(inventoryRepository).deleteById(1L);
+    }
+    @Test
+    void releaseStock_shouldRestoreInventoryQuantity() {
+        Inventory inventory = new Inventory(101L, 50);
+
+        StockReleasedEvent event =
+                new StockReleasedEvent(1L, 101L, 10, "RELEASED");
+
+        when(inventoryRepository.findByProductId(101L))
+                .thenReturn(Optional.of(inventory));
+        when(inventoryRepository.save(inventory))
+                .thenReturn(inventory);
+
+        inventoryService.releaseStock(event);
+
+        assertEquals(60, inventory.getQuantity());
+
+        verify(inventoryRepository).findByProductId(101L);
+        verify(inventoryRepository).save(inventory);
     }
 }

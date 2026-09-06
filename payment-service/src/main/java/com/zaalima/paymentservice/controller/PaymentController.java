@@ -1,5 +1,6 @@
 package com.zaalima.paymentservice.controller;
 
+import com.zaalima.paymentservice.dto.PaymentFailureRequest;
 import com.zaalima.paymentservice.entity.Payment;
 import com.zaalima.paymentservice.service.PaymentService;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,14 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
         return ResponseEntity.ok(paymentService.createPayment(payment));
+    }
+
+    @PostMapping("/fail")
+    public ResponseEntity<Void> failPayment(
+            @RequestBody PaymentFailureRequest request) {
+
+        paymentService.publishPaymentFailure(request);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}")

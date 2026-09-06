@@ -1,20 +1,16 @@
-package com.zaalima.paymentservice.event;
+package com.zaalima.orderservice.event;
 
-public class PaymentResultEvent {
+public class StockReleasedEvent {
 
     private Long orderId;
     private Long productId;
     private Integer quantity;
     private String status;
 
-    public PaymentResultEvent() {
+    public StockReleasedEvent() {
     }
 
-    public PaymentResultEvent(
-            Long orderId,
-            Long productId,
-            Integer quantity,
-            String status) {
+    public StockReleasedEvent(Long orderId, Long productId, Integer quantity, String status) {
         this.orderId = orderId;
         this.productId = productId;
         this.quantity = quantity;

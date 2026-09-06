@@ -1,13 +1,12 @@
-package com.zaalima.orderservice.event;
+package com.zaalima.paymentservice.dto;
 
-public class PaymentResultEvent {
+public class PaymentFailureRequest {
 
     private Long orderId;
     private Long productId;
     private Integer quantity;
-    private String status;
 
-    public PaymentResultEvent() {
+    public PaymentFailureRequest() {
     }
 
     public Long getOrderId() {
@@ -32,13 +31,5 @@ public class PaymentResultEvent {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 }

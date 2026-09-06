@@ -3,6 +3,7 @@ package com.zaalima.inventoryservice.service;
 import com.zaalima.inventoryservice.entity.Inventory;
 import com.zaalima.inventoryservice.event.OrderEvent;
 import com.zaalima.inventoryservice.event.StockReservedEvent;
+import com.zaalima.inventoryservice.event.StockReleasedEvent;
 import com.zaalima.inventoryservice.repository.InventoryRepository;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -14,11 +15,11 @@ import java.util.Optional;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
-    private final KafkaTemplate<String, StockReservedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public InventoryService(
             InventoryRepository inventoryRepository,
-            KafkaTemplate<String, StockReservedEvent> kafkaTemplate) {
+            KafkaTemplate<String, Object> kafkaTemplate) {
         this.inventoryRepository = inventoryRepository;
         this.kafkaTemplate = kafkaTemplate;
     }
@@ -94,6 +95,26 @@ public class InventoryService {
                                         + orderEvent.getProductId()
                         );
                     }
+                });
+    }
+    public void releaseStock(StockReleasedEvent event) {
+
+        inventoryRepository.findByProductId(event.getProductId())
+                .ifPresent(inventory -> {
+
+                    int currentQuantity = inventory.getQuantity();
+                    int releasedQuantity = event.getQuantity();
+
+                    inventory.setQuantity(currentQuantity + releasedQuantity);
+
+                    inventoryRepository.save(inventory);
+
+                    System.out.println(
+                            "Inventory released for order "
+                                    + event.getOrderId()
+                                    + ". Restored quantity: "
+                                    + inventory.getQuantity()
+                    );
                 });
     }
 }
