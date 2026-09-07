@@ -1,5 +1,6 @@
 package com.zaalima.orderservice.service;
 
+import com.zaalima.orderservice.avro.OrderCreatedEvent;
 import com.zaalima.orderservice.entity.Order;
 import com.zaalima.orderservice.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.kafka.core.KafkaTemplate;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -21,7 +23,7 @@ class OrderServiceTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private KafkaTemplate<String, Order> kafkaTemplate;
+    private KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
 
     @InjectMocks
     private OrderService orderService;
@@ -29,6 +31,12 @@ class OrderServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+    }
+
+    private void setOrderId(Order order, Long id) throws Exception {
+        Field field = Order.class.getDeclaredField("id");
+        field.setAccessible(true);
+        field.set(order, id);
     }
 
     @Test
@@ -73,8 +81,13 @@ class OrderServiceTest {
     }
 
     @Test
-    void createOrder_shouldSaveAndReturnOrder() {
+    void createOrder_shouldSaveAndReturnOrder() throws Exception {
         Order order = new Order();
+        order.setProductId(101L);
+        order.setQuantity(2);
+        order.setStatus("CREATED");
+
+        setOrderId(order, 1L);
 
         when(orderRepository.save(order))
                 .thenReturn(order);
@@ -84,14 +97,29 @@ class OrderServiceTest {
         assertSame(order, result);
 
         verify(orderRepository).save(order);
-        verify(kafkaTemplate).send("order-events", order);
+
+        verify(kafkaTemplate).send(
+                eq("order-events"),
+                eq("1"),
+                argThat(event ->
+                        event.getOrderId() == 1L
+                                && event.getProductId() == 101L
+                                && event.getQuantity() == 2
+                                && "CREATED".contentEquals(event.getStatus())
+                )
+        );
     }
 
     @Test
-    void updateOrder_shouldUpdateStatus_whenExists() {
+    void updateOrder_shouldUpdateStatus_whenExists() throws Exception {
         Order existingOrder = new Order();
-        Order updatedOrder = new Order();
+        existingOrder.setProductId(101L);
+        existingOrder.setQuantity(2);
+        existingOrder.setStatus("CREATED");
 
+        setOrderId(existingOrder, 1L);
+
+        Order updatedOrder = new Order();
         updatedOrder.setStatus("SHIPPED");
 
         when(orderRepository.findById(1L))
@@ -107,7 +135,17 @@ class OrderServiceTest {
 
         verify(orderRepository).findById(1L);
         verify(orderRepository).save(existingOrder);
-        verify(kafkaTemplate).send("order-events", existingOrder);
+
+        verify(kafkaTemplate).send(
+                eq("order-events"),
+                eq("1"),
+                argThat(event ->
+                        event.getOrderId() == 1L
+                                && event.getProductId() == 101L
+                                && event.getQuantity() == 2
+                                && "SHIPPED".contentEquals(event.getStatus())
+                )
+        );
     }
 
     @Test
@@ -124,7 +162,11 @@ class OrderServiceTest {
 
         verify(orderRepository).findById(99L);
         verify(orderRepository, never()).save(any(Order.class));
-        verify(kafkaTemplate, never()).send(anyString(), any(Order.class));
+        verify(kafkaTemplate, never()).send(
+                anyString(),
+                anyString(),
+                any(OrderCreatedEvent.class)
+        );
     }
 
     @Test
