@@ -1,7 +1,7 @@
 package com.zaalima.inventoryservice.service;
 
+import com.zaalima.inventoryservice.avro.OrderCreatedEvent;
 import com.zaalima.inventoryservice.entity.Inventory;
-import com.zaalima.inventoryservice.event.OrderEvent;
 import com.zaalima.inventoryservice.event.StockReservedEvent;
 import com.zaalima.inventoryservice.event.StockReleasedEvent;
 import com.zaalima.inventoryservice.repository.InventoryRepository;
@@ -36,7 +36,10 @@ public class InventoryService {
         return inventoryRepository.save(inventory);
     }
 
-    public Optional<Inventory> updateInventory(Long id, Inventory updatedInventory) {
+    public Optional<Inventory> updateInventory(
+            Long id,
+            Inventory updatedInventory) {
+
         return inventoryRepository.findById(id).map(inventory -> {
             inventory.setProductId(updatedInventory.getProductId());
             inventory.setQuantity(updatedInventory.getQuantity());
@@ -53,7 +56,7 @@ public class InventoryService {
         return true;
     }
 
-    public void processOrder(OrderEvent orderEvent) {
+    public void processOrder(OrderCreatedEvent orderEvent) {
 
         inventoryRepository.findByProductId(orderEvent.getProductId())
                 .ifPresent(inventory -> {
@@ -69,7 +72,7 @@ public class InventoryService {
 
                         StockReservedEvent stockReservedEvent =
                                 new StockReservedEvent(
-                                        orderEvent.getId(),
+                                        orderEvent.getOrderId(),
                                         orderEvent.getProductId(),
                                         orderEvent.getQuantity(),
                                         "RESERVED"
@@ -77,13 +80,13 @@ public class InventoryService {
 
                         kafkaTemplate.send(
                                 "inventory-events",
-                                String.valueOf(orderEvent.getId()),
+                                String.valueOf(orderEvent.getOrderId()),
                                 stockReservedEvent
                         );
 
                         System.out.println(
                                 "Inventory reserved for order "
-                                        + orderEvent.getId()
+                                        + orderEvent.getOrderId()
                                         + ". Remaining quantity: "
                                         + inventory.getQuantity()
                         );
@@ -97,6 +100,7 @@ public class InventoryService {
                     }
                 });
     }
+
     public void releaseStock(StockReleasedEvent event) {
 
         inventoryRepository.findByProductId(event.getProductId())

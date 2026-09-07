@@ -1,6 +1,6 @@
 package com.zaalima.inventoryservice.listener;
 
-import com.zaalima.inventoryservice.event.OrderEvent;
+import com.zaalima.inventoryservice.avro.OrderCreatedEvent;
 import com.zaalima.inventoryservice.service.InventoryService;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -16,13 +16,14 @@ public class OrderEventListener {
 
     @KafkaListener(
             topics = "order-events",
-            groupId = "inventory-service"
+            containerFactory = "orderCreatedKafkaListenerContainerFactory",
+            groupId = "inventory-service-avro"
     )
-    public void consumeOrderEvent(OrderEvent orderEvent) {
+    public void consumeOrderEvent(OrderCreatedEvent orderEvent) {
 
         System.out.println(
                 "Received order event: orderId="
-                        + orderEvent.getId()
+                        + orderEvent.getOrderId()
                         + ", productId="
                         + orderEvent.getProductId()
                         + ", quantity="
@@ -31,7 +32,7 @@ public class OrderEventListener {
                         + orderEvent.getStatus()
         );
 
-        if ("CREATED".equalsIgnoreCase(orderEvent.getStatus())) {
+        if ("CREATED".contentEquals(orderEvent.getStatus())) {
             inventoryService.processOrder(orderEvent);
         }
     }
