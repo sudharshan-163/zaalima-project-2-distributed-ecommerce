@@ -2,7 +2,7 @@ package com.zaalima.paymentservice.service;
 
 import com.zaalima.paymentservice.dto.PaymentFailureRequest;
 import com.zaalima.paymentservice.entity.Payment;
-import com.zaalima.paymentservice.event.PaymentResultEvent;
+import com.zaalima.paymentservice.avro.PaymentFailedEvent;
 import com.zaalima.paymentservice.repository.PaymentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +24,7 @@ class PaymentServiceTest {
     private PaymentRepository paymentRepository;
 
     @Mock
-    private KafkaTemplate<String, PaymentResultEvent> kafkaTemplate;
+    private KafkaTemplate<String, org.apache.avro.specific.SpecificRecord> kafkaTemplate;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -141,12 +141,14 @@ class PaymentServiceTest {
         verify(kafkaTemplate).send(
                 eq("payment-events"),
                 eq("10"),
-                argThat(event ->
-                        event.getOrderId().equals(10L)
-                                && event.getProductId().equals(101L)
-                                && event.getQuantity().equals(2)
+                argThat((PaymentFailedEvent event) ->
+                        event.getOrderId() == 10L
+                                && event.getProductId() == 101L
+                                && event.getQuantity() == 2
                                 && "FAILED".equals(event.getStatus())
                 )
         );
     }
 }
+
+

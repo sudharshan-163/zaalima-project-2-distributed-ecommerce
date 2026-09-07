@@ -1,35 +1,32 @@
 package com.zaalima.inventoryservice.listener;
 
-import com.zaalima.inventoryservice.event.PaymentResultEvent;
+import com.zaalima.inventoryservice.avro.PaymentFailedEvent;
 import com.zaalima.inventoryservice.event.StockReleasedEvent;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-// @Component
-public class PaymentResultListener {
+@Component
+public class PaymentFailedAvroListener {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public PaymentResultListener(KafkaTemplate<String, Object> kafkaTemplate) {
+    public PaymentFailedAvroListener(
+            KafkaTemplate<String, Object> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
     }
 
     @KafkaListener(
             topics = "payment-events",
-            containerFactory = "paymentResultKafkaListenerContainerFactory",
-            groupId = "inventory-payment-group"
+            containerFactory = "paymentFailedAvroKafkaListenerContainerFactory"
     )
-    public void handlePaymentResult(PaymentResultEvent event) {
+    public void handlePaymentFailed(PaymentFailedEvent event) {
 
-        if (event.getOrderId() == null
-                || event.getProductId() == null
-                || event.getQuantity() == null
-                || event.getStatus() == null) {
+        if (event == null) {
             return;
         }
 
-        if ("FAILED".equalsIgnoreCase(event.getStatus())) {
+        if ("FAILED".equalsIgnoreCase(event.getStatus().toString())) {
 
             StockReleasedEvent releasedEvent =
                     new StockReleasedEvent(
@@ -46,9 +43,10 @@ public class PaymentResultListener {
             );
 
             System.out.println(
-                    "Stock release event published for failed payment, orderId="
+                    "Stock release event published for failed Avro payment, orderId="
                             + event.getOrderId()
             );
         }
     }
 }
+

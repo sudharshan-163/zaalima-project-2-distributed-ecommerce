@@ -2,7 +2,7 @@ package com.zaalima.paymentservice.service;
 
 import com.zaalima.paymentservice.dto.PaymentFailureRequest;
 import com.zaalima.paymentservice.entity.Payment;
-import com.zaalima.paymentservice.event.PaymentResultEvent;
+import com.zaalima.paymentservice.avro.PaymentFailedEvent;
 import com.zaalima.paymentservice.repository.PaymentRepository;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -14,11 +14,11 @@ import java.util.Optional;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final KafkaTemplate<String, PaymentResultEvent> kafkaTemplate;
+    private final KafkaTemplate<String, org.apache.avro.specific.SpecificRecord> kafkaTemplate;
 
     public PaymentService(
             PaymentRepository paymentRepository,
-            KafkaTemplate<String, PaymentResultEvent> kafkaTemplate) {
+            KafkaTemplate<String, org.apache.avro.specific.SpecificRecord> kafkaTemplate) {
         this.paymentRepository = paymentRepository;
         this.kafkaTemplate = kafkaTemplate;
     }
@@ -70,8 +70,8 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        PaymentResultEvent event =
-                new PaymentResultEvent(
+        PaymentFailedEvent event =
+                new PaymentFailedEvent(
                         request.getOrderId(),
                         request.getProductId(),
                         request.getQuantity(),

@@ -1,5 +1,6 @@
 package com.zaalima.paymentservice.event;
 
+import com.zaalima.paymentservice.avro.PaymentSuccessEvent;
 import com.zaalima.paymentservice.entity.Payment;
 import com.zaalima.paymentservice.repository.PaymentRepository;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -10,11 +11,11 @@ import org.springframework.stereotype.Component;
 public class OrderEventListener {
 
     private final PaymentRepository paymentRepository;
-    private final KafkaTemplate<String, PaymentResultEvent> kafkaTemplate;
+    private final KafkaTemplate<String, org.apache.avro.specific.SpecificRecord> kafkaTemplate;
 
     public OrderEventListener(
             PaymentRepository paymentRepository,
-            KafkaTemplate<String, PaymentResultEvent> kafkaTemplate) {
+            KafkaTemplate<String, org.apache.avro.specific.SpecificRecord> kafkaTemplate) {
         this.paymentRepository = paymentRepository;
         this.kafkaTemplate = kafkaTemplate;
     }
@@ -51,7 +52,7 @@ public class OrderEventListener {
 
             kafkaTemplate.send(
                     "payment-events",
-                    new PaymentResultEvent(
+                    new PaymentSuccessEvent(
                             event.getOrderId(),
                             event.getProductId(),
                             event.getQuantity(),
@@ -66,3 +67,5 @@ public class OrderEventListener {
         }
     }
 }
+
+

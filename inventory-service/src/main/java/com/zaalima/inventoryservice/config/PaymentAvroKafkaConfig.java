@@ -1,31 +1,22 @@
 package com.zaalima.inventoryservice.config;
 
-import com.zaalima.inventoryservice.event.PaymentResultEvent;
+import com.zaalima.inventoryservice.avro.PaymentFailedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
-// @Configuration
-public class PaymentResultKafkaConfig {
+@Configuration
+public class PaymentAvroKafkaConfig {
 
     @Bean
-    public ConsumerFactory<String, PaymentResultEvent> paymentResultConsumerFactory() {
-
-        JsonDeserializer<PaymentResultEvent> deserializer =
-                new JsonDeserializer<>(PaymentResultEvent.class);
-
-        deserializer.addTrustedPackages(
-                "com.zaalima.inventoryservice.event"
-        );
-
-        deserializer.setUseTypeHeaders(false);
+    public ConsumerFactory<String, PaymentFailedEvent> paymentFailedAvroConsumerFactory() {
 
         Map<String, Object> props = new HashMap<>();
 
@@ -36,12 +27,12 @@ public class PaymentResultKafkaConfig {
 
         props.put(
                 ConsumerConfig.GROUP_ID_CONFIG,
-                "inventory-payment-group"
+                "inventory-payment-avro-group"
         );
 
         props.put(
                 ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-                "earliest"
+                "latest"
         );
 
         props.put(
@@ -49,21 +40,23 @@ public class PaymentResultKafkaConfig {
                 StringDeserializer.class
         );
 
-        return new org.springframework.kafka.core.DefaultKafkaConsumerFactory<>(
+        return new DefaultKafkaConsumerFactory<>(
                 props,
                 new StringDeserializer(),
-                deserializer
+                new com.zaalima.inventoryservice.kafka.AvroDeserializer<>(
+                        PaymentFailedEvent.class
+                )
         );
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, PaymentResultEvent>
-    paymentResultKafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, PaymentFailedEvent>
+    paymentFailedAvroKafkaListenerContainerFactory() {
 
-        ConcurrentKafkaListenerContainerFactory<String, PaymentResultEvent> factory =
+        ConcurrentKafkaListenerContainerFactory<String, PaymentFailedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
 
-        factory.setConsumerFactory(paymentResultConsumerFactory());
+        factory.setConsumerFactory(paymentFailedAvroConsumerFactory());
 
         return factory;
     }
