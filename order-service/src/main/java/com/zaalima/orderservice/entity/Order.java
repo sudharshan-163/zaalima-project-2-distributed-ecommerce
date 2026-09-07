@@ -14,7 +14,7 @@ public class Order {
 
     private Integer quantity;
 
-    private String status;
+    private String status = "CREATED";
 
     public Order() {
     }
