@@ -2,7 +2,6 @@ package com.zaalima.inventoryservice.service;
 
 import com.zaalima.inventoryservice.entity.Inventory;
 import com.zaalima.inventoryservice.event.OrderEvent;
-import com.zaalima.inventoryservice.event.StockReservedEvent;
 import com.zaalima.inventoryservice.event.StockReleasedEvent;
 import com.zaalima.inventoryservice.repository.InventoryRepository;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -67,13 +66,13 @@ public class InventoryService {
 
                         inventoryRepository.save(inventory);
 
-                        StockReservedEvent stockReservedEvent =
-                                new StockReservedEvent(
-                                        orderEvent.getId(),
-                                        orderEvent.getProductId(),
-                                        orderEvent.getQuantity(),
-                                        "RESERVED"
-                                );
+                        com.zaalima.inventoryservice.avro.StockReservedEvent stockReservedEvent =
+                                com.zaalima.inventoryservice.avro.StockReservedEvent.newBuilder()
+                                        .setOrderId(orderEvent.getId())
+                                        .setProductId(orderEvent.getProductId())
+                                        .setQuantity(orderEvent.getQuantity())
+                                        .setStatus("RESERVED")
+                                        .build();
 
                         kafkaTemplate.send(
                                 "inventory-events",
@@ -118,3 +117,4 @@ public class InventoryService {
                 });
     }
 }
+

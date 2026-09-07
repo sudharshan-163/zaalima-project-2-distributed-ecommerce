@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 public class OrderEventListener {
 
     private final PaymentRepository paymentRepository;
-    private final KafkaTemplate<String, PaymentResultEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public OrderEventListener(
             PaymentRepository paymentRepository,
-            KafkaTemplate<String, PaymentResultEvent> kafkaTemplate) {
+            KafkaTemplate<String, Object> kafkaTemplate) {
         this.paymentRepository = paymentRepository;
         this.kafkaTemplate = kafkaTemplate;
     }
@@ -51,12 +51,12 @@ public class OrderEventListener {
 
             kafkaTemplate.send(
                     "payment-events",
-                    new PaymentResultEvent(
-                            event.getOrderId(),
-                            event.getProductId(),
-                            event.getQuantity(),
-                            "SUCCESS"
-                    )
+                    com.zaalima.paymentservice.avro.PaymentSuccessEvent.newBuilder()
+                            .setOrderId(event.getOrderId())
+                            .setProductId(event.getProductId())
+                            .setQuantity(event.getQuantity())
+                            .setStatus("SUCCESS")
+                            .build()
             );
 
             System.out.println(
@@ -66,3 +66,4 @@ public class OrderEventListener {
         }
     }
 }
+

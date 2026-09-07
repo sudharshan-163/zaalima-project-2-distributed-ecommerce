@@ -14,11 +14,11 @@ import java.util.Optional;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final KafkaTemplate<String, PaymentResultEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public PaymentService(
             PaymentRepository paymentRepository,
-            KafkaTemplate<String, PaymentResultEvent> kafkaTemplate) {
+            KafkaTemplate<String, Object> kafkaTemplate) {
         this.paymentRepository = paymentRepository;
         this.kafkaTemplate = kafkaTemplate;
     }
@@ -70,13 +70,13 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        PaymentResultEvent event =
-                new PaymentResultEvent(
-                        request.getOrderId(),
-                        request.getProductId(),
-                        request.getQuantity(),
-                        "FAILED"
-                );
+        com.zaalima.paymentservice.avro.PaymentFailedEvent event =
+                com.zaalima.paymentservice.avro.PaymentFailedEvent.newBuilder()
+                        .setOrderId(request.getOrderId())
+                        .setProductId(request.getProductId())
+                        .setQuantity(request.getQuantity())
+                        .setStatus("FAILED")
+                        .build();
 
         kafkaTemplate.send(
                 "payment-events",
@@ -85,3 +85,4 @@ public class PaymentService {
         );
     }
 }
+
