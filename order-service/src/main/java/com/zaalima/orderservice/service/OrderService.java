@@ -1,6 +1,5 @@
 package com.zaalima.orderservice.service;
 
-import com.zaalima.orderservice.avro.OrderCreatedEvent;
 import com.zaalima.orderservice.entity.Order;
 import com.zaalima.orderservice.repository.OrderRepository;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -13,11 +12,11 @@ import java.util.Optional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Order> kafkaTemplate;
 
     public OrderService(
             OrderRepository orderRepository,
-            KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate) {
+            KafkaTemplate<String, Order> kafkaTemplate) {
 
         this.orderRepository = orderRepository;
         this.kafkaTemplate = kafkaTemplate;
@@ -35,18 +34,7 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        OrderCreatedEvent event = OrderCreatedEvent.newBuilder()
-                .setOrderId(savedOrder.getId())
-                .setProductId(savedOrder.getProductId())
-                .setQuantity(savedOrder.getQuantity())
-                .setStatus(savedOrder.getStatus())
-                .build();
-
-        kafkaTemplate.send(
-                "order-events",
-                String.valueOf(savedOrder.getId()),
-                event
-        );
+        kafkaTemplate.send("order-events", savedOrder);
 
         return savedOrder;
     }
@@ -58,18 +46,7 @@ public class OrderService {
 
                     Order savedOrder = orderRepository.save(existingOrder);
 
-                    OrderCreatedEvent event = OrderCreatedEvent.newBuilder()
-                            .setOrderId(savedOrder.getId())
-                            .setProductId(savedOrder.getProductId())
-                            .setQuantity(savedOrder.getQuantity())
-                            .setStatus(savedOrder.getStatus())
-                            .build();
-
-                    kafkaTemplate.send(
-                            "order-events",
-                            String.valueOf(savedOrder.getId()),
-                            event
-                    );
+                    kafkaTemplate.send("order-events", savedOrder);
 
                     return savedOrder;
                 });

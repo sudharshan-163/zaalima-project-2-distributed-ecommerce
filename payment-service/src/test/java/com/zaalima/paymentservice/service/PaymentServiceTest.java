@@ -24,7 +24,7 @@ class PaymentServiceTest {
     private PaymentRepository paymentRepository;
 
     @Mock
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private KafkaTemplate<String, PaymentResultEvent> kafkaTemplate;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -141,18 +141,12 @@ class PaymentServiceTest {
         verify(kafkaTemplate).send(
                 eq("payment-events"),
                 eq("10"),
-                argThat((com.zaalima.paymentservice.avro.PaymentFailedEvent event) ->
-                        event.getOrderId() == 10L
-                                && event.getProductId() == 101L
-                                && event.getQuantity() == 2
-                                && "FAILED".contentEquals(event.getStatus())
+                argThat(event ->
+                        event.getOrderId().equals(10L)
+                                && event.getProductId().equals(101L)
+                                && event.getQuantity().equals(2)
+                                && "FAILED".equals(event.getStatus())
                 )
         );
     }
 }
-
-
-
-
-
-
