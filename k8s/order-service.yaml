@@ -15,6 +15,7 @@ spec:
       containers:
         - name: order-service
           image: zaalima/order-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
           env:
@@ -22,6 +23,17 @@ spec:
               value: http://service-registry:8761/eureka/
             - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
               value: kafka:9092
+            - name: SPRING_CONFIG_IMPORT
+              value: optional:configserver:http://config-server:8888
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://host.docker.internal:5432/orders_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: DB_PASSWORD
 ---
 apiVersion: v1
 kind: Service

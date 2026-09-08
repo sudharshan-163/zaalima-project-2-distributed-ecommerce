@@ -1,8 +1,9 @@
 package com.zaalima.inventoryservice.config;
 
-import com.zaalima.inventoryservice.event.StockReleasedEvent;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -15,21 +16,22 @@ import java.util.Map;
 @Configuration
 public class StockReleasedKafkaConfig {
 
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
+
     @Bean
-    public ConsumerFactory<String, StockReleasedEvent> stockReleasedConsumerFactory() {
+    public ConsumerFactory<String, JsonNode> stockReleasedConsumerFactory() {
 
-        JsonDeserializer<StockReleasedEvent> deserializer =
-                new JsonDeserializer<>(StockReleasedEvent.class);
+        JsonDeserializer<JsonNode> deserializer =
+                new JsonDeserializer<>(JsonNode.class);
 
-        deserializer.addTrustedPackages(
-                "com.zaalima.inventoryservice.event"
-        );
+        deserializer.setUseTypeHeaders(false);
 
         Map<String, Object> props = new HashMap<>();
 
         props.put(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                "localhost:9092"
+                bootstrapServers
         );
 
         props.put(
@@ -55,10 +57,10 @@ public class StockReleasedKafkaConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, StockReleasedEvent>
+    public ConcurrentKafkaListenerContainerFactory<String, JsonNode>
     stockReleasedKafkaListenerContainerFactory() {
 
-        ConcurrentKafkaListenerContainerFactory<String, StockReleasedEvent> factory =
+        ConcurrentKafkaListenerContainerFactory<String, JsonNode> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
 
         factory.setConsumerFactory(stockReleasedConsumerFactory());
