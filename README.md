@@ -1,592 +1,249 @@
-\# Zaalima Project 2 — Distributed E-Commerce Microservices
+﻿# Zaalima Project 2 - Distributed E-Commerce Microservices
 
+A distributed e-commerce backend built using a microservices architecture with event-driven communication, Apache Kafka, Apache Avro, Choreography Saga, Resilience4j, Micrometer/Prometheus monitoring, distributed tracing with Zipkin, Docker, and Kubernetes.
 
+## Architecture
 
-A distributed e-commerce backend developed using a microservices architecture with event-driven communication, Kafka, Avro events, Choreography Saga, Resilience4j, distributed tracing, monitoring, Docker, and Kubernetes deployment manifests.
-
-
-
-\## Architecture
-
-
-
-The project contains the following services:
-
-
-
-\* \*\*Service Registry (Eureka Server)\*\* — Port `8761`
-
-\* \*\*Config Server\*\* — Port `8888`
-
-\* \*\*API Gateway\*\* — Port `8090`
-
-\* \*\*Order Service\*\* — Port `8081`
-
-\* \*\*Inventory Service\*\* — Port `8082`
-
-\* \*\*Payment Service\*\* — Port `8083`
-
-\* \*\*Notification Service\*\* — Port `8084`
-
-
+Services:
+- Service Registry (Eureka Server) - 8761
+- Config Server - 8888
+- API Gateway - 8090
+- Order Service - 8081
+- Inventory Service - 8082
+- Payment Service - 8083
+- Notification Service - 8084
 
 Infrastructure:
-
-
-
-\* Apache Kafka — `localhost:9092`
-
-\* Prometheus
-
-\* Zipkin
-
-\* Dockerfiles
-
-\* Kubernetes manifests
-
-
-
-\## Technology Stack
-
-
-
-\* Java
-
-\* Spring Boot
-
-\* Spring Cloud
-
-\* Spring Cloud Eureka
-
-\* Spring Cloud Config
-
-\* Spring Cloud Gateway
-
-\* Apache Kafka
-
-\* Apache Avro
-
-\* Resilience4j
-
-\* Micrometer
-
-\* Prometheus
-
-\* Zipkin
-
-\* Docker
-
-\* Kubernetes
-
-\* Maven
-
-
-
-\## Event-Driven Communication
-
-
-
-Kafka is used for asynchronous communication between services.
-
-
-
-The project uses Avro-based events for event serialization.
-
-
-
-The main order flow is:
-
-
-
-```text
-
-Client
-
-&#x20; |
-
-&#x20; v
-
-API Gateway
-
-&#x20; |
-
-&#x20; v
-
-Order Service
-
-&#x20; |
-
-&#x20; | Order Created Event
-
-&#x20; v
-
-Inventory Service
-
-&#x20; |
-
-&#x20; | Stock Reserved
-
-&#x20; v
-
-Payment Service
-
-&#x20; |
-
-&#x20; | Payment Success
-
-&#x20; v
-
-Order Status = PAID
-
-```
-
-
-
-\## Choreography Saga
-
-
-
-The order workflow follows a choreography-based Saga pattern.
-
-
-
-\### Successful Flow
-
-
-
-```text
+- Apache Kafka
+- PostgreSQL
+- Prometheus
+- Zipkin
+- Docker
+- Kubernetes
+
+## Technology Stack
+
+- Java 17
+- Spring Boot
+- Spring Cloud
+- Eureka
+- Spring Cloud Config
+- Spring Cloud Gateway
+- Apache Kafka
+- Apache Avro
+- Resilience4j
+- Micrometer
+- Prometheus
+- Zipkin
+- Docker
+- Kubernetes
+- Maven
+- PostgreSQL
+
+## Event-Driven Communication
+
+Kafka is used for asynchronous communication between microservices.
+
+Avro is used for the main business events.
+
+Main order flow:
+
+Client -> API Gateway -> Order Service -> Order Created Event -> Inventory Service -> Stock Reserved Event -> Payment Service -> Payment Success Event -> Order PAID
+
+## Choreography Saga
+
+The project uses a choreography-based Saga pattern.
+
+Successful flow:
 
 Order Created
+-> Inventory reserves stock
+-> Payment succeeds
+-> Order becomes PAID
 
-&#x20;     |
-
-&#x20;     v
-
-Inventory reserves stock
-
-&#x20;     |
-
-&#x20;     v
-
-Payment succeeds
-
-&#x20;     |
-
-&#x20;     v
-
-Order becomes PAID
-
-```
-
-
-
-\### Payment Failure / Compensation Flow
-
-
-
-```text
+Payment failure compensation:
 
 Order Created
+-> Inventory reserves stock
+-> Payment fails
+-> Payment Failed Event
+-> Inventory releases stock
+-> Stock Released Event
+-> Order becomes CANCELLED
 
-&#x20;     |
+The compensation flow restores reserved inventory when payment fails.
 
-&#x20;     v
+## Resilience
 
-Inventory reserves stock
+Resilience4j is used for:
 
-&#x20;     |
+- Circuit Breaker
+- Retry
+- Time Limiter
+- Fallback
 
-&#x20;     v
+## Monitoring
 
-Payment fails
+Micrometer and Spring Boot Actuator provide application metrics.
 
-&#x20;     |
+Prometheus is used for metrics monitoring.
 
-&#x20;     v
+## Distributed Tracing
 
-Stock Release
+Micrometer Tracing with Brave and Zipkin Reporter is configured.
 
-&#x20;     |
-
-&#x20;     v
-
-Order becomes CANCELLED
-
-```
-
-
-
-This provides compensation for the distributed transaction without using a centralized transaction coordinator.
-
-
-
-\## Resilience
-
-
-
-Resilience4j patterns are used in the services for fault tolerance.
-
-
-
-The project includes resilience mechanisms such as:
-
-
-
-\* Circuit Breaker
-
-\* Retry
-
-\* Time Limiter
-
-\* Fallback handling
-
-
-
-\## Monitoring
-
-
-
-Micrometer and Prometheus are used for application metrics.
-
-
-
-The services expose metrics through Spring Boot Actuator.
-
-
-
-Prometheus can collect application metrics from the configured actuator endpoints.
-
-
-
-\## Distributed Tracing
-
-
-
-Micrometer Tracing with Brave and Zipkin Reporter is configured for distributed tracing.
-
-
-
-Tracing is configured with:
-
-
-
-```text
-
-management.tracing.sampling.probability=1.0
-
-```
-
-
-
-Zipkin endpoint:
-
-
-
-```text
+Default Zipkin endpoint:
 
 http://localhost:9411/api/v2/spans
 
-```
-
-
-
-Zipkin UI is normally available at:
-
-
-
-```text
+Zipkin UI:
 
 http://localhost:9411
 
-```
+Zipkin runtime availability depends on a running Zipkin instance.
 
+## Security
 
+The API Gateway contains JWT-based resource-server security configuration.
 
-> Zipkin runtime availability depends on the local Zipkin instance being started.
+The JWT secret is supplied through external configuration and is not committed to the repository.
 
+## API Gateway Routes
 
+/orders/** -> ORDER-SERVICE
+/inventory/** -> INVENTORY-SERVICE
+/payments/** -> PAYMENT-SERVICE
 
-\## Security
+The Gateway uses Eureka service discovery and load-balanced routes.
 
+## Testing
 
+Service-level tests are available for:
 
-The API Gateway includes JWT-based security configuration.
+- Order Service
+- Inventory Service
+- Payment Service
+- Notification Service
 
+Verified distributed workflows include:
 
+- Successful payment -> Order becomes PAID
+- Payment failure -> Stock is released and Order becomes CANCELLED
 
-Requests can be routed through the gateway to the appropriate microservice using service discovery.
+The payment-failure compensation flow was verified in Kubernetes, including inventory restoration.
 
-
-
-\## API Gateway Routes
-
-
-
-The gateway uses Eureka service discovery and load-balanced routes for the microservices.
-
-
-
-Example logical routes include:
-
-
-
-```text
-
-/inventory/\*\*  -> INVENTORY-SERVICE
-
-/payment/\*\*    -> PAYMENT-SERVICE
-
-/order/\*\*      -> ORDER-SERVICE
-
-```
-
-
-
-\## Testing
-
-
-
-The project contains service-level tests for the core services.
-
-
-
-Verified areas include:
-
-
-
-\* Order Service
-
-\* Inventory Service
-
-\* Payment Service
-
-\* Notification Service
-
-
-
-The distributed order workflow was also verified for:
-
-
-
-1\. Successful payment → Order becomes `PAID`
-
-2\. Payment failure → Stock is released and Order becomes `CANCELLED`
-
-
-
-\## Docker
-
-
+## Docker
 
 Dockerfiles are provided for:
 
+- API Gateway
+- Config Server
+- Service Registry
+- Order Service
+- Inventory Service
+- Payment Service
+- Notification Service
 
+The services use Java 17 runtime containers.
 
-\* Order Service
+## Kubernetes
 
-\* Inventory Service
-
-\* Payment Service
-
-\* Notification Service
-
-
-
-The Dockerfiles package the generated Spring Boot JAR files into Java 17 runtime containers.
-
-
-
-\## Kubernetes
-
-
-
-Kubernetes manifests are provided under:
-
-
-
-```text
+Kubernetes manifests are available under:
 
 k8s/
 
-```
+Manifests include:
 
+- service-registry.yaml
+- config-server.yaml
+- kafka.yaml
+- order-service.yaml
+- inventory-service.yaml
+- payment-service.yaml
+- notification-service.yaml
 
+Database credentials are supplied through a Kubernetes Secret.
 
-The manifests include Deployments and ClusterIP Services for the application microservices.
+## Project Structure
 
+api-gateway/
+config-server/
+service-registry/
+order-service/
+inventory-service/
+payment-service/
+notification-service/
+config-repository/
+k8s/
+README.md
 
+## Running Locally
 
-> Kubernetes deployment requires a working Docker/Kubernetes environment. The manifests are included as deployment artifacts; runtime deployment should be verified in an environment where Docker and kubectl are available.
+Ensure the required infrastructure is running before starting dependent services.
 
+Recommended order:
 
+1. PostgreSQL
+2. Kafka
+3. Service Registry
+4. Config Server
+5. Application Services
+6. API Gateway
+7. Prometheus
+8. Zipkin
 
-\## Project Structure
+Build:
 
-
-
-```text
-
-zaalima-project-2-distributed-ecommerce/
-
-│
-
-├── api-gateway/
-
-├── config-server/
-
-├── service-registry/
-
-├── order-service/
-
-├── inventory-service/
-
-├── payment-service/
-
-├── notification-service/
-
-│
-
-├── k8s/
-
-│   ├── order-service.yaml
-
-│   ├── inventory-service.yaml
-
-│   ├── payment-service.yaml
-
-│   └── notification-service.yaml
-
-│
-
-└── README.md
-
-```
-
-
-
-\## Running the Project
-
-
-
-Start the infrastructure and services in the required order:
-
-
-
-```text
-
-1\. Service Registry
-
-2\. Config Server
-
-3\. API Gateway
-
-4\. Order Service
-
-5\. Inventory Service
-
-6\. Payment Service
-
-7\. Notification Service
-
-8\. Kafka
-
-9\. Prometheus
-
-10\. Zipkin
-
-```
-
-
-
-Build a service using Maven:
-
-
-
-```powershell
-
-.\\mvnw.cmd clean package
-
-```
-
-
+.\mvnw.cmd clean package
 
 Run tests:
 
+.\mvnw.cmd clean test
 
+## Verification
 
-```powershell
-
-.\\mvnw.cmd clean test
-
-```
-
-
-
-\## Verification
-
-
-
-After starting the services:
-
-
-
-\### Eureka
-
-
-
-```text
+Eureka:
 
 http://localhost:8761
 
-```
-
-
-
-\### API Gateway
-
-
-
-```text
+API Gateway:
 
 http://localhost:8090
 
-```
-
-
-
-\### Zipkin
-
-
-
-```text
-
-http://localhost:9411
-
-```
-
-
-
-\### Prometheus
-
-
-
-```text
+Prometheus:
 
 http://localhost:9090
 
-```
+Zipkin:
 
+http://localhost:9411
 
+## Kubernetes Verification
 
-\## Project Status
+Useful commands:
 
+kubectl get pods
+kubectl get services
+kubectl get deployments
 
+The Kubernetes environment was used to verify the distributed order workflow, including successful payment and payment-failure compensation.
 
-Core implementation, service-level testing, event-driven order workflow, Saga compensation flow, resilience configuration, monitoring configuration, distributed tracing configuration, Dockerfiles, and Kubernetes manifests are included in the project.
+## Project Status
 
+The project includes:
 
-
-Docker/Kubernetes runtime deployment requires the corresponding local tools or deployment environment.
-
-
-
+- Microservices architecture
+- Service discovery
+- Centralized configuration
+- API Gateway
+- Event-driven Kafka communication
+- Avro event serialization
+- Choreography Saga
+- Compensation flow
+- Resilience4j fault tolerance
+- Micrometer/Prometheus monitoring
+- Zipkin distributed tracing configuration
+- Docker containerization
+- Kubernetes deployment manifests
+- Service-level tests
+- End-to-end order workflow verification
