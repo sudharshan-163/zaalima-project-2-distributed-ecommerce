@@ -54,7 +54,17 @@ public class OrderService {
     public Optional<Order> updateOrder(Long id, Order updatedOrder) {
         return orderRepository.findById(id)
                 .map(existingOrder -> {
-                    existingOrder.setStatus(updatedOrder.getStatus());
+                    if (updatedOrder.getProductId() != null) {
+                        existingOrder.setProductId(updatedOrder.getProductId());
+                    }
+
+                    if (updatedOrder.getQuantity() != null) {
+                        existingOrder.setQuantity(updatedOrder.getQuantity());
+                    }
+
+                    if (updatedOrder.getStatus() != null) {
+                        existingOrder.setStatus(updatedOrder.getStatus());
+                    }
 
                     Order savedOrder = orderRepository.save(existingOrder);
 
