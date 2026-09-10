@@ -38,12 +38,32 @@ function createIcon(className) {
 
 function validateOrdersResponse(data) {
     if (data === null || data === undefined) return [];
-    if (!Array.isArray(data)) throw new Error("The orders response was not a list.");
+
+    if (!Array.isArray(data)) {
+        throw new Error("The orders response was not a list.");
+    }
+
     return data.map((order) => {
-        if (!order || !Number.isInteger(order.id) || order.id < 1 || !Number.isInteger(order.productId) || order.productId < 1 || !Number.isInteger(order.quantity) || order.quantity < 1 || typeof order.status !== "string" || order.status.trim().length === 0) {
+        if (
+            !order ||
+            !Number.isInteger(order.id) ||
+            order.id < 1 ||
+            (order.productId !== null &&
+                (!Number.isInteger(order.productId) || order.productId < 1)) ||
+            (order.quantity !== null &&
+                (!Number.isInteger(order.quantity) || order.quantity < 1)) ||
+            typeof order.status !== "string" ||
+            order.status.trim().length === 0
+        ) {
             throw new Error("The orders response had an unexpected shape.");
         }
-        return { id: order.id, productId: order.productId, quantity: order.quantity, status: order.status.trim() };
+
+        return {
+            id: order.id,
+            productId: order.productId,
+            quantity: order.quantity,
+            status: order.status.trim()
+        };
     });
 }
 
@@ -67,9 +87,9 @@ function createOrderCard(order) {
     const productFact = document.createElement("div");
     const quantityFact = document.createElement("div");
     const productLabel = createTextElement("span", "order-card__fact-label", "Product ID");
-    const productValue = createTextElement("strong", "order-card__fact-value", String(order.productId));
+    const productValue = createTextElement("strong", "order-card__fact-value", order.productId === null ? "N/A" : String(order.productId));
     const quantityLabel = createTextElement("span", "order-card__fact-label", "Quantity");
-    const quantityValue = createTextElement("strong", "order-card__fact-value", String(order.quantity));
+    const quantityValue = createTextElement("strong", "order-card__fact-value", order.quantity === null ? "N/A" : String(order.quantity));
     const footer = document.createElement("div");
     const statusIcon = createIcon(`bi ${statusStyle.icon}`);
     const detailsLink = document.createElement("a");

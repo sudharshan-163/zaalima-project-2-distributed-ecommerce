@@ -1,3 +1,5 @@
+import { getAccessToken } from "./auth.js";
+
 const API_BASE_URL = "http://localhost:18090";
 
 export function getApiBaseUrl() {
@@ -29,13 +31,25 @@ export function getOrderById(id) {
 
 export async function request(path, options = {}) {
     const method = (options.method || "GET").toUpperCase();
+
     const headers = {
         Accept: "application/json",
         ...(options.headers || {})
     };
+
+    const accessToken = getAccessToken();
+
+    if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     if (method === "GET") {
         delete headers["Content-Type"];
-    } else if (options.body !== undefined && options.body !== null && !headers["Content-Type"]) {
+    } else if (
+        options.body !== undefined &&
+        options.body !== null &&
+        !headers["Content-Type"]
+    ) {
         headers["Content-Type"] = "application/json";
     }
 
@@ -45,12 +59,19 @@ export async function request(path, options = {}) {
     });
 
     if (!response.ok) {
-        const error = new Error(`API request failed with status ${response.status}`);
+        const error = new Error(
+            `API request failed with status ${response.status}`
+        );
+
         error.status = response.status;
         throw error;
     }
 
-    if (response.status === 204) return null;
+    if (response.status === 204) {
+        return null;
+    }
+
     const text = await response.text();
+
     return text ? JSON.parse(text) : null;
 }
